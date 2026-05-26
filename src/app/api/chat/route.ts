@@ -11,7 +11,16 @@ As the conversation continues, naturally learn: their match dates, their languag
 Personality: warm, knowledgeable, direct. Like a well-traveled friend who knows North America well. Never robotic.`;
 
 export async function POST(request: Request) {
-  const { messages } = await request.json();
+  let body: { messages?: unknown[] };
+  try {
+    body = await request.json();
+  } catch {
+    return new Response('Invalid JSON', { status: 400 });
+  }
+
+  const messages = Array.isArray(body.messages) && body.messages.length > 0
+    ? body.messages
+    : [{ role: 'user', content: 'Hi' }];
 
   const encoder = new TextEncoder();
 
@@ -22,7 +31,7 @@ export async function POST(request: Request) {
           model: 'claude-opus-4-7',
           max_tokens: 1024,
           system: SYSTEM_PROMPT,
-          messages,
+          messages: messages as Anthropic.MessageParam[],
         });
 
         messageStream.on('text', (text) => {
